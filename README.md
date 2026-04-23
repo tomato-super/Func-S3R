@@ -1,99 +1,142 @@
-# Waldo: A Private Time-Series Database from Function Secret Sharing
+# Waldo Derivative: Private Time-Series Query Prototype
 
-This implementation accompanies our paper by Emma Dauterman, Mayank Rathee, Raluca Ada Popa and Ion Stoica to appear at Oakland'22.
+This repository is a derivative implementation based on the Waldo research prototype
+("Waldo: A Private Time-Series Database from Function Secret Sharing").
 
-**WARNING**: This is an academic proof-of-concept prototype and has not received careful code review. This implementation is NOT ready for production use.
-
-This prototype is released under the Apache v2 license (see [License](#license)).
+**Warning**: this is an academic prototype and is not production-ready.
 
 ## Upstream and Derivative Notice
 
-This repository contains a derivative implementation based on the open-source Waldo project:
+This repository contains local modifications on top of the upstream Waldo codebase.
 
 - Project: Waldo: A Private Time-Series Database from Function Secret Sharing
 - Paper authors: Emma Dauterman, Mayank Rathee, Raluca Ada Popa, Ion Stoica
 - Upstream license: Apache License 2.0
 
-This repository includes local modifications on top of the upstream codebase.
-When distributing source or binaries, keep this repository's `LICENSE`, `NOTICE`,
-and `THIRD_PARTY_LICENSES.md` files together.
+When distributing source or binaries, include:
 
-## Setup
+- `LICENSE`
+- `NOTICE`
+- `THIRD_PARTY_LICENSES.md`
 
-Install gRPC (tested on v1.48.1) using the instructions [here](https://grpc.io/docs/languages/cpp/quickstart/).
+## What Is In This Repo
 
-Download the [Boost](https://www.boost.org/) library (tested on versions 1.74-1.76; can be installed on Ubuntu with `sudo apt install libboost-all-dev`) and [Relic](https://github.com/relic-toolkit/relic) (tested on version 0.6.0; no presets needed while building Relic; use `-DMULTI=OPENMP` flag with `cmake` when building Relic).
+- 3-server private query execution (`query_server`, `bench`, `correctness_tests`)
+- Predicate/query modes:
+- `point`, `range`
+- `vb-non-fss-point`, `vb-non-fss-range`
+- `vb-fss-point`, `vb-fss-range`
+- `bo-non-fss-point`, `bo-non-fss-range`
+- `bo-fss-point`, `bo-fss-range`
+- A benchmark orchestrator: `scripts/bench_compare.py`
 
-To install the dependencies to run benchmarking scripts, `cd scripts` and run `pip install -r requirements.txt`.
+## Prerequisites
 
-Note that the [libPSI](https://github.com/osu-crypto/libPSI) and [libOTe](https://github.com/osu-crypto/libOTe) libraries, which build on [cryptoTools](https://github.com/ladnir/cryptoTools/tree/master), are already included in `fss-core`.
+- CMake >= 3.5
+- C++14 toolchain (GCC/Clang)
+- gRPC + Protobuf (C++ development packages)
+- Boost (`thread`, `system`)
+- OpenMP
+- Relic (for libOTe/libPSI stack)
 
-## Building
+The code vendors `libOTe`/`libPSI` sources under `fss-core`, but they still need to be
+configured/built in your environment.
 
-Build libOTe 
-```
+## Build
+
+From repository root:
+
+```bash
+# 1) Build libOTe
 cd fss-core/libOTe
 cmake . -DENABLE_RELIC=ON -DENABLE_NP=ON -DENABLE_KKRT=ON
 make -j
-```
-Build libPSI
-```
-cd fss-core/libPSI
+
+# 2) Build libPSI
+cd ../libPSI
 cmake . -DENABLE_RELIC=ON -DENABLE_DRRN_PSI=ON -DENABLE_KKRT_PSI=ON
 make -j
+
+# 3) Build this project
+cd ../..
+cmake -S . -B build
+cmake --build build -j
 ```
 
-Build networking code
+Main binaries are generated in `build/bin`:
+
+- `query_server`
+- `bench`
+- `correctness_tests`
+- `query_client`
+
+## Quick Local Run
+
+Use the default local configs in `config/`:
+
+```bash
+# terminal 1
+./build/bin/query_server config/server0.config
+
+# terminal 2
+./build/bin/query_server config/server1.config
+
+# terminal 3
+./build/bin/query_server config/server2.config
 ```
-cd network
-cmake .
-make
-cd ..
+
+Then in terminal 4:
+
+```bash
+# correctness smoke
+./build/bin/correctness_tests config/client.config
+
+# benchmark entry
+./build/bin/bench config/client.config
 ```
 
-Build Waldo
+`bench` writes timing rows to:
+
+- `<experiment_dir>/results.dat` (from `config/client.config`)
+
+## Benchmark Script
+
+Primary benchmark driver:
+
+- `scripts/bench_compare.py`
+- detailed script doc: `scripts/README_bench_compare.md`
+
+Example:
+
+```bash
+python3 scripts/bench_compare.py \
+  --exp-tag point_vb_bo_v1 \
+  --modes point vb-non-fss-point vb-fss-point bo-non-fss-point bo-fss-point \
+  --ands 1 2 4 8 \
+  --reps 5 \
+  --warmup-runs 1
 ```
-cmake .
-make
-```
 
-## Running benchmarks
+Script outputs are created under `result/<timestamp>__<exp-tag>/` by default.
 
-Run `scripts/runExperiment.py` with the options for setup ('-s') and/or running the experiment ('-r').
+## Project Layout
 
-Set the experiment config file at the top of `runExperiment.py`, and make sure that the experiment config file has the right IP addresses.
-
-After you've pulled and run `make` at the client and servers, run `python runExperiment.py` at the coordinator machine (machine running the experiments, not the client or servers).
-
-The output will be in `experiments/results` in the directory corresponding to the experiment and the particular time. See `processed_results.dat` for final benchmark numbers (look in `runExperiment.py` for how to parse), and you can see logs for individual executions in the directory for each parameter setting.
-
-## Testing locally
-
-To run the entire system locally, start server X as `./build/bin/query_server config/serverX.config`. Start the client with `./build/bin/bench config/client.config`.
-Alternatively, start the client with `./build/bin/correctness_tests` to run the correctness tests. Modify the parameters in the corresponding config files to run with different settings (e.g. number of cores, malicious security).
-Make sure to start the servers within 10 seconds of each other and wait until each has printed "DONE WITH SETUP" before starting the client (this means initialization has completed).
-
-The following unit tests can also be run locally:
-```
-./build/bin/AggTreeUnitTest
-./build/bin/DCFTableICUnitTest
-./build/bin/DCFTableParallelICUnitTest
-./build/bin/DCFTableUnitTest
-./build/bin/DCFTableParallelUnitTest
-./build/bin/DCF_unit_test
-./build/bin/DPFTableUnitTest
-./build/bin/DPF_unit_test
-```
+- `client/` client runtime and test entrypoints
+- `server/` query server runtime
+- `network/` gRPC proto and network glue
+- `secure-indices/` secure index structures
+- `fss-core/` FSS/crypto dependencies and core primitives
+- `config/` local run configs
+- `scripts/` benchmark and utility scripts
 
 ## Limitations
 
-The rollup functionality suggested as an extension for the WaldoTree construction in the
-paper is not fully implemented. Also, the node values for WaldoTree are directly
-returned without aggregating by the user-defined aggregation function.
+- Rollup functionality mentioned in the paper is not fully implemented.
+- This implementation is for experimentation and measurement, not hardened deployment.
 
 ## Acknowledgements
 
-Thanks to Natacha Crooks and Vivian Fang for contributing to the framework used for the benchmarking in `scripts/`.
+Thanks to Natacha Crooks and Vivian Fang for contributing to the framework used for benchmarking.
 
 ## License
 
