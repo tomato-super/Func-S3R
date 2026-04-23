@@ -20,6 +20,11 @@ license information.
 - License: Unlicense
 - License file in this repo: `fss-core/libOTe/SimplestOT/LICENSE`
 
+4. Component: `utils/json.hpp` (nlohmann/json, single-header copy)
+- Origin: https://github.com/nlohmann/json
+- License: MIT
+- License notice in this repo: `utils/json.hpp`
+
 ## Notes
 
 - This list reflects the files currently vendored in this repository.

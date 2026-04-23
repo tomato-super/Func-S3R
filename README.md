@@ -1,7 +1,7 @@
-# Waldo Derivative: Private Time-Series Query Prototype
+# Client-Light Functional Secure Secret Shared Retrieval for Privacy-Preserving Cloud Database Analytics (Waldo Derivative)
 
 This repository is a derivative implementation based on the Waldo research prototype
-("Waldo: A Private Time-Series Database from Function Secret Sharing").
+("Client-Light Functional Secure Secret Shared Retrieval for Privacy-Preserving Cloud Database Analytics").
 
 **Warning**: this is an academic prototype and is not production-ready.
 
@@ -9,7 +9,9 @@ This repository is a derivative implementation based on the Waldo research proto
 
 This repository contains local modifications on top of the upstream Waldo codebase.
 
-- Project: Waldo: A Private Time-Series Database from Function Secret Sharing
+- Project: Client-Light Functional Secure Secret Shared Retrieval for Privacy-Preserving Cloud Database Analytics
+- Upstream project: Waldo: A Private Time-Series Database from Function Secret Sharing
+- Current paper title: Client-Light Functional Secure Secret Shared Retrieval for Privacy-Preserving Cloud Database Analytics
 - Paper authors: Emma Dauterman, Mayank Rathee, Raluca Ada Popa, Ion Stoica
 - Upstream license: Apache License 2.0
 
