@@ -1,4 +1,4 @@
-# Client-Light Functional Secure Secret Shared Retrieval for Privacy-Preserving Cloud Database Analytics
+# Functional Secure Secret-Shared Retrieval and Its Applications in Privacy-Preserving Data Analytics
 
 **Warning**: this is an academic prototype and is not production-ready.
 
